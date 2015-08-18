@@ -11,10 +11,17 @@ this file and include it in basic-server.js so that it actually works.
 *Hint* Check out the node module documentation at http://nodejs.org/api/modules.html.
 
 **************************************************************/
+// exports.requestHandler = requestHandler;
+
+var http = require('http');
+var queryString = require('querystring')
+// var stubs = require('./spec/Stubs.js');
+
+var results = [];
 
 var requestHandler = function(request, response) {
+
   // Request and Response come from node's http module.
-  //
   // They include information about both the incoming request, such as
   // headers and URL, and about the outgoing response, such as its status
   // and content.
@@ -27,6 +34,8 @@ var requestHandler = function(request, response) {
   // Adding more logging to your server can be an easy way to get passive
   // debugging help, but you should always be careful about leaving stray
   // console.logs in your code.
+  console.log("Request url: " + request.url);
+  console.log("Request headers: " + request.headers);
   console.log("Serving request type " + request.method + " for url " + request.url);
 
   // The outgoing status.
@@ -34,16 +43,46 @@ var requestHandler = function(request, response) {
 
   // See the note below about CORS headers.
   var headers = defaultCorsHeaders;
+  if(request.url === '/classes/messages') {
+    if(request.method === 'GET') {
+      // headers['Content-Type'] = "text/plain";
+      response.writeHead(200, {
+        'Content-Type': 'application/json'
+      });
+      response.end(JSON.stringify({results: results}));
+      console.log(response);
+    }
+    if(request.method === 'POST') {
+      response.writeHead(201, {
+        'Content-Type': 'application/json'
+      });
+
+      var body = "";
+
+      request.on('end', function() {
+        console.log(body);
+        var parsed = JSON.parse(body);
+        results.push(parsed);
+        console.log(results, 'results');
+      })
+      request.on('data', function(chunk) {
+        // console.log(chunk);
+        body += chunk;
+      })
+
+
+    }
+  }
 
   // Tell the client we are sending them plain text.
   //
   // You will need to change this if you are sending something
   // other than plain text, like JSON or HTML.
-  headers['Content-Type'] = "text/plain";
+  // headers['Content-Type'] = "text/plain";
 
   // .writeHead() writes to the request line and headers of the response,
   // which includes the status and all headers.
-  response.writeHead(statusCode, headers);
+  // response.writeHead(statusCode, headers);
 
   // Make sure to always call response.end() - Node may not send
   // anything back to the client until you do. The string you pass to
@@ -52,7 +91,7 @@ var requestHandler = function(request, response) {
   //
   // Calling .end "flushes" the response's internal buffer, forcing
   // node to actually send all the data over to the client.
-  response.end("Hello, World!");
+  response.end(JSON.stringify(results));
 };
 
 // These headers will allow Cross-Origin Resource Sharing (CORS).
@@ -71,3 +110,4 @@ var defaultCorsHeaders = {
   "access-control-max-age": 10 // Seconds.
 };
 
+exports.requestHandler = requestHandler;
